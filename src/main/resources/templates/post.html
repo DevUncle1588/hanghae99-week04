@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <!-- Required meta tags -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <!-- Bootstrap CSS -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+        integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+
+  <!-- Optional JavaScript -->
+  <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
+          integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+          crossorigin="anonymous"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
+          integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+          crossorigin="anonymous"></script>
+  <!--    구글 폰트-->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Hahmlet:wght@200&display=swap" rel="stylesheet">
+  <title>항해99 블로그</title>
+
+  <meta property="og:title" content="항해99 블로그">
+  <meta property="og:description" content="항해99를 하면서 이야기나눠봐요">
+  <meta property="og:image" content="images/ogimage.jpg">
+
+  <style>
+    .font {
+      font-family: 'Hahmlet', serif;
+    }
+
+    .top {
+      height : 200px;
+      background-color: beige;
+      padding-top : 70px;
+      padding-left: 50px;
+      margin-bottom: 50px;
+    }
+
+    .foot {
+      width: 120px;
+      height:50px;
+      margin: 50px auto 50px auto;
+
+    }
+  </style>
+  <script>
+    $(document).ready(function () {
+      // HTML 문서를 로드할 때마다 실행합니다.
+      getPost();
+    })
+
+    function getPost() {
+      $.ajax({
+        type: 'GET',
+        url: '/api/posts',
+        success: function (response) {
+          for (let i=0;i<response.length;i++) {
+            let id = response[i]['id'];
+            let title = response[i]['title'];
+            let username = response[i]['username'];
+            let createDate = response[i]['createdAt'];
+            let temp_html = `<tr data-toggle="modal" data-target="#onePost" onclick="getOnePost(${id})">
+                                            <th scope="row">${id}</th>
+                                            <td>${title}</td>
+                                            <td>${username}</td>
+                                            <td>${createDate}</td>
+                                        </tr>`;
+            $('#post-body').append(temp_html);
+          }
+        }
+      })
+    }
+
+    function deletePost(targetId) {
+      $.ajax({
+        type: "DELETE",
+        url: `/delete/${targetId}`,
+        success: function (response) {
+          alert('삭제 완료!');
+          window.location.reload();
+        }
+      })
+    }
+
+    function getOnePost(targetId) {
+      console.log("targetId="+targetId);
+      $('#one-title').empty();
+      $('#one-contents').empty();
+      $('#one-btn').empty();
+      console.log("targetId222="+targetId);
+      $.ajax({
+        type: 'GET',
+        url: `/api/posts/${targetId}`,
+        success: function (response) {
+          console.log("response="+response);
+          let title = response['title'];
+          let username = response['username'];
+          let date = response['createdAt'];
+          let contents = response['contents'];
+          let temp_title = `${title}`
+          let temp_contents = `<td>작성자 : ${username}</td>
+                                        <td>작성일 : ${date}</td>
+                                        <td>${contents}</td>`
+          let temp_btn =`<button type="button" class="btn btn-secondary" onclick="deletePost(${targetId})">삭제하기</button>
+                         <textarea id="input-reply-contents" style="width:100%" placeholder="내용을 입력하세요"></textarea>
+                         <button type="button" class="btn btn-secondary" onclick="addReply(${targetId})">댓글작성</button>`
+          $('#one-title').append(temp_title);
+          $('#one-contents').append(temp_contents);
+          $('#one-btn').append(temp_btn);
+        }
+      })
+    }
+
+    function addPost() {
+      let title = $('#input-title').val();
+      let username = $('#input-username').val();
+      let contents = $('#input-contents').val();
+
+      if (title == "") {
+        alert("제목을 입력해주세요")
+        return;
+      } else if (contents == "") {
+        alert("내용을 입력해주세요")
+        return;
+      } else if (contents.trim().length >255) {
+        alert("내용은 255자까지만 입력가능합니다.")
+        return;
+      }
+
+      let data = {'title':title, 'username':username, 'contents':contents};
+      console.log(JSON.stringify(data));
+
+      $.ajax({
+        type: "POST",
+        url: "/api/posts",
+        contentType: "application/json", // JSON 형식으로 전달함을 알리기
+        data: JSON.stringify(data), // 기본적으로 문자열로만 주고받을 수 있다.
+        success: function (response) {
+          alert('작성글이 게시되었습니다');
+          window.location.reload();
+        }
+      });
+    }
+
+    function addReply(targetId) {
+      let username = $('#input-username').val();
+      let replyContents = $('#input-reply-contents').val();
+
+      if (title == "") {
+        alert("제목을 입력해주세요")
+        return;
+      } else if (contents == "") {
+        alert("내용을 입력해주세요")
+        return;
+      } else if (contents.trim().length >255) {
+        alert("내용은 255자까지만 입력가능합니다.")
+        return;
+      }
+
+      let data = {'username':username, 'replyContents':replyContents};
+      console.log(JSON.stringify(data));
+
+      $.ajax({
+        type: "POST",
+        url: `/reply/${targetId}`,
+        contentType: "application/json", // JSON 형식으로 전달함을 알리기
+        data: JSON.stringify(data), // 기본적으로 문자열로만 주고받을 수 있다.
+        success: function (response) {
+          alert('댓글이 게시되었습니다');
+          // window.location.reload();
+        }
+      });
+    }
+
+
+
+
+  </script>
+</head>
+
+<body class="font">
+<div class="header" style="position:relative;">
+  <div id="header-title-login-user">
+    <span th:text="${username}"></span> 님이
+  </div>
+  <div id="header-title-select-shop">
+    로그인중입니다.
+  </div>
+  <form id="my_login_form" method="post" action="/user/login">
+    <a id="login-text" href="javascript:{}" onclick="document.getElementById('my_login_form').submit();">로그인</a>
+  </form>
+  <form id="my_logout_form" method="get" action="/user/logout">
+    <a id="logout-text" href="javascript:{}" onclick="document.getElementById('my_logout_form').submit();">로그아웃</a>
+  </form>
+</div>
+
+<div>
+  <table class="table">
+<!--    <thead class="thead-light">-->
+      <p scope="col"></p>
+      <div scope="col">제목</div>
+      <div scope="col">작성자</div>
+      <div scope="col">작성일</div>
+<!--    </thead>-->
+    <tbody id="post-body">
+    </tbody>
+  </table>
+</div>
+<div class="foot">
+  <textarea id="input-reply-contents" style="width:100%" placeholder="내용을 입력하세요"></textarea>
+  <button type="button" class="btn btn-secondary" onclick="addReply(${targetId})">댓글작성</button>
+  <button type="button" class="btn btn-secondary" onclick="deletePost(${targetId})">삭제하기</button>
+</div>
+
+<!--   글 작성 모달창    -->
+<div id="posting" class="modal" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <input type="text" style="width:50%" placeholder="제목" id="input-title">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+<!--        <div id="input-username" th:text="${username}"></div>-->
+        <input type="text" style="width:50%;margin-bottom: 20px" placeholder="제목" id="input-username">
+        <textarea id="input-contents" style="width:100%" placeholder="내용을 입력하세요"></textarea>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" onclick="addPost()">글쓰기</button>
+      </div>
+    </div>
+  </div>
+</div>
+<!--   게시글 상세 모달창   -->
+<div id="onePost" class="modal" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="one-title"></h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" id="one-contents">
+      </div>
+      <div class="modal-footer">
+        <div id="one-btn"></div>
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">닫기</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div th:if="${admin_role}" id="admin"></div>
+</body>
+
+</html>
